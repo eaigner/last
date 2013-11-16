@@ -2,10 +2,8 @@ package last
 
 import (
 	"container/list"
-	"log"
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
 type Cache interface {
@@ -28,9 +26,14 @@ type Cache interface {
 	// Evict evicts the last n items from the cache.
 	Evict(n int)
 
-	// Schedule starts monitoring the free system memory and evicts
-	// items automatically when below the minimum memory threshold.
+	// Schedule adds the cache to the eviction scheduler that evicts it
+	// automatically when the system memory is below the minimum threshold.
+	//
+	// You must unschedule the cache when you no longer need it, or it's memory won't be freed up.
 	Schedule()
+
+	// Unschedule removes the cache from the eviction scheduler.
+	Unschedule()
 }
 
 type lru struct {
@@ -110,24 +113,13 @@ func (c *lru) Evict(n int) {
 }
 
 func (c *lru) Schedule() {
-	if atomic.LoadInt32(&c.scheduled) == 1 {
-		return
-	}
-	atomic.StoreInt32(&c.scheduled, 1)
-	go func() {
-		for {
-			time.Sleep(time.Second * 5)
+	schedulerMtx.Lock()
+	defer schedulerMtx.Unlock()
+	caches[c] = 1
+}
 
-			var stat SysMemStats
-			err := ReadSysMemStats(&stat)
-			if err != nil {
-				log.Printf("error: %s", err)
-				continue
-			}
-
-			if stat.Free < uint64(atomic.LoadInt64(&c.minFreeMem)) {
-				c.Evict(c.Len() / 3) // evict one third
-			}
-		}
-	}()
+func (c *lru) Unschedule() {
+	schedulerMtx.Lock()
+	defer schedulerMtx.Unlock()
+	delete(caches, c)
 }
