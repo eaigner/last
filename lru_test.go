@@ -52,6 +52,9 @@ func TestCache(t *testing.T) {
 	if x := c.Len(); x != 4 {
 		t.Fatal(x)
 	}
+	if x := len(c.(*lru).lookup); x != 4 {
+		t.Fatal(x)
+	}
 	if _, ok := c.Get("4"); !ok {
 		t.Fatal()
 	}
@@ -64,5 +67,8 @@ func TestCache(t *testing.T) {
 
 	if x := c.Len(); x != 0 {
 		t.Fatal()
+	}
+	if x := len(c.(*lru).lookup); x != 0 {
+		t.Fatal(x)
 	}
 }
