@@ -47,7 +47,7 @@ func TestCache(t *testing.T) {
 	}
 
 	// Evict half
-	c.Evict(2)
+	c.Evict(c.Len() / 2)
 
 	if x := c.Len(); x != 4 {
 		t.Fatal(x)
@@ -63,7 +63,7 @@ func TestCache(t *testing.T) {
 	}
 
 	// Evict all
-	c.Evict(0)
+	c.Evict(c.Len())
 
 	if x := c.Len(); x != 0 {
 		t.Fatal()

@@ -25,9 +25,8 @@ type Cache interface {
 	// Len returns the number of items stored in the cache.
 	Len() int
 
-	// Evict evicts a fraction of the cache, e.g. if frac is 3, one third of the items is evicted.
-	// If you pass a value less or equal than 1, all items are removed.
-	Evict(frac int)
+	// Evict evicts n items from the cache.
+	Evict(n int)
 
 	// Schedule starts monitoring the free system memory and evicts
 	// items automatically when below the minimum memory threshold.
@@ -96,24 +95,17 @@ func (c *lru) Len() int {
 	return c.list.Len()
 }
 
-func (c *lru) Evict(frac int) {
+func (c *lru) Evict(n int) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
-	if frac < 1 {
-		frac = 1
-	}
-	numEvict := c.list.Len() / frac
-
 	for {
-		if numEvict < 1 {
+		if n < 1 {
 			break
 		}
-
 		e := c.list.Back()
 		delete(c.lookup, e.Value.(*lruItem).key)
 		c.list.Remove(e)
-
-		numEvict--
+		n--
 	}
 }
 
@@ -134,7 +126,7 @@ func (c *lru) Schedule() {
 			}
 
 			if stat.Free < uint64(atomic.LoadInt64(&c.minFreeMem)) {
-				c.Evict(3) // evict one third
+				c.Evict(c.Len() / 3) // evict one third
 			}
 		}
 	}()
