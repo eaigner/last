@@ -30,7 +30,7 @@ func ReadSysMemStats(s *MemStats) error {
 		return fmt.Errorf("could not get vm statistics: %d", status)
 	}
 
-	// /* Stats in bytes */
+	// Stats in bytes
 	free := uint64(vm_stat.free_count)
 	active := uint64(vm_stat.active_count)
 	inactive := uint64(vm_stat.inactive_count)
