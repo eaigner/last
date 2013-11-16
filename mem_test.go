@@ -5,7 +5,7 @@ import (
 )
 
 func TestReadSysMemStats(t *testing.T) {
-	var s MemStats
+	var s SysMemStats
 	err := ReadSysMemStats(&s)
 	if err != nil {
 		t.Fatal(err)

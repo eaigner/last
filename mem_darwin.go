@@ -11,7 +11,7 @@ import (
 	"unsafe"
 )
 
-func ReadSysMemStats(s *MemStats) error {
+func readSysMemStats(s *SysMemStats) error {
 	if s == nil {
 		return nil
 	}
