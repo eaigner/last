@@ -25,7 +25,7 @@ type Cache interface {
 	// Len returns the number of items stored in the cache.
 	Len() int
 
-	// Evict evicts n items from the cache.
+	// Evict evicts the last n items from the cache.
 	Evict(n int)
 
 	// Schedule starts monitoring the free system memory and evicts
