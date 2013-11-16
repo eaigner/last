@@ -2,6 +2,7 @@ package last
 
 import (
 	"log"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -45,4 +46,7 @@ func run() {
 			c.Evict(c.Len() / 3) // evict one third
 		}
 	}
+
+	// Collect garbage and release OS memory
+	debug.FreeOSMemory()
 }

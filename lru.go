@@ -29,7 +29,8 @@ type Cache interface {
 	// Schedule adds the cache to the eviction scheduler that evicts it
 	// automatically when the system memory is below the minimum threshold.
 	//
-	// You must unschedule the cache when you no longer need it, or it's memory won't be freed up.
+	// You must unschedule the cache when you no longer need it, or it's
+	// memory cannot be freed up by the GC.
 	Schedule()
 
 	// Unschedule removes the cache from the eviction scheduler.
