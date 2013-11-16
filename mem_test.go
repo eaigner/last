@@ -10,9 +10,15 @@ func TestReadSysMemStats(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if s.Used == 0 ||
-		s.Free == 0 ||
-		s.Total == 0 {
-		t.Fatal(s)
+	// check if value is in a reasonable range (5MB - 64GB)
+	var min uint64 = 5 * 1024 * 1024
+	var max uint64 = 64 * 1024 * 1024 * 1024
+	check := func(v uint64) {
+		if v < min || v > max {
+			t.Fatal(s)
+		}
 	}
+	check(s.Used)
+	check(s.Total)
+	check(s.Free)
 }

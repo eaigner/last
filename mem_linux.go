@@ -1,6 +1,22 @@
 package last
 
+import (
+	"syscall"
+)
+
 func ReadSysMemStats(s *MemStats) error {
-	// TODO: implement
+	if s == nil {
+		return nil
+	}
+	var info syscall.Sysinfo_t
+	err := syscall.Sysinfo(&info)
+	if err != nil {
+		return err
+	}
+
+	s.Total = info.Totalram
+	s.Free = info.Freeram
+	s.Used = s.Total - s.Free
+
 	return nil
 }

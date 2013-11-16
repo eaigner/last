@@ -12,6 +12,9 @@ import (
 )
 
 func ReadSysMemStats(s *MemStats) error {
+	if s == nil {
+		return nil
+	}
 	var vm_pagesize C.vm_size_t
 	var vm_stat C.vm_statistics_data_t
 	var count C.mach_msg_type_number_t = C.HOST_VM_INFO_COUNT
