@@ -105,7 +105,7 @@ func TestMemory(t *testing.T) {
 	var a uint64
 
 	// Evict if memory consumtion has increased 10MB
-	var stats sysMemStats
+	var stats SysMemStats
 	err := readSysMemStats(&stats)
 	if err != nil {
 		t.Fatal(err)

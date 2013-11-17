@@ -4,7 +4,7 @@ import (
 	"syscall"
 )
 
-func readSysMemStats(s *sysMemStats) error {
+func readSysMemStats(s *SysMemStats) error {
 	if s == nil {
 		return nil
 	}
