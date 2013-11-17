@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"runtime/debug"
 	"sync"
+	"time"
 )
 
 type Cache interface {
@@ -106,6 +107,10 @@ func (c *lru) evictIfNecessary() {
 	if memStats.Free < c.minFreeMem {
 		c.evict(c.list.Len() / 4)
 		debug.FreeOSMemory()
+
+		// force a read reset, otherwise we might evict
+		// the whole cache with subsequent calls.
+		lastRead = time.Unix(0, 0)
 	}
 }
 
