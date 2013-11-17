@@ -11,7 +11,7 @@ type Cache interface {
 	// in bytes before the cache starts evicting objects.
 	SetMinFreeMemory(v uint64)
 
-	// Put stores pushes the item to the front of the cache.
+	// Put stores and pushes the item to the front of the cache.
 	Put(k string, v interface{})
 
 	// Get gets the item from the cache and pushes it to the front.
