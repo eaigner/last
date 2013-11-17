@@ -3,6 +3,7 @@ package last
 import (
 	"strconv"
 	"testing"
+	"time"
 )
 
 func TestCache(t *testing.T) {
@@ -79,5 +80,49 @@ func TestCache(t *testing.T) {
 	}
 	if x := len(c.(*lru).lookup); x != 0 {
 		t.Fatal(x)
+	}
+}
+
+func TestMemory(t *testing.T) {
+	c := New()
+
+	// creates a buffer with alternating ones and zeros
+	makeBuf := func(n int) []byte {
+		var b = make([]byte, n)
+		for i := 0; i < len(b); i++ {
+			b[i] = byte(i % 2)
+		}
+		return b
+	}
+
+	var evictCount uint64
+	evictFunc = func() {
+		evictCount++
+	}
+
+	var i int
+	var n = 1024 * 1024
+	var a uint64
+
+	// Evict if memory consumtion has increased 10MB
+	var stats sysMemStats
+	err := readSysMemStats(&stats)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.(*lru).minFreeMem = (stats.Free - 1024*1024*10)
+
+	for {
+		i++
+		lastRead = time.Unix(0, 0) // force read
+		c.Put(strconv.Itoa(i), makeBuf(n))
+		a += uint64(n)
+		if evictCount > 0 {
+			break
+		}
+	}
+
+	if i < 9 || i > 11 {
+		t.Fatal(i)
 	}
 }

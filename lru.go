@@ -43,7 +43,7 @@ type lruItem struct {
 
 func New() Cache {
 	return &lru{
-		minFreeMem: 1024 * 1024 * 10, // 10MB
+		minFreeMem: 1024 * 1024 * 100, // 100MB
 		lookup:     make(map[string]*list.Element),
 		list:       list.New(),
 	}
@@ -113,11 +113,17 @@ func (c *lru) evictIfNecessary() {
 		c.evict(c.list.Len() / 4)
 		debug.FreeOSMemory()
 
+		if evictFunc != nil {
+			evictFunc()
+		}
+
 		// force a read reset, otherwise we might evict
 		// the whole cache with subsequent calls.
 		lastRead = time.Unix(0, 0)
 	}
 }
+
+var evictFunc func() = nil
 
 func (c *lru) evict(n int) {
 	for {
