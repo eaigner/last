@@ -62,6 +62,7 @@ func (c *lru) Put(k string, v interface{}) {
 		return
 	}
 	c.evictIfNecessary()
+	c.del(k)
 	c.lookup[k] = c.list.PushFront(&lruItem{
 		key:   k,
 		value: v,
@@ -81,6 +82,10 @@ func (c *lru) Get(k string) (interface{}, bool) {
 func (c *lru) Del(k string) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
+	c.del(k)
+}
+
+func (c *lru) del(k string) {
 	if e, ok := c.lookup[k]; ok {
 		c.list.Remove(e)
 		delete(c.lookup, k)

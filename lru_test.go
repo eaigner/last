@@ -24,6 +24,15 @@ func TestCache(t *testing.T) {
 		t.Fatal(x)
 	}
 
+	// Make sure Put overwrites items with the same key
+	c.Put("1", 1)
+	if x := c.Len(); x != 10 {
+		t.Fatal(x)
+	}
+	if x := len(c.(*lru).lookup); x != 10 {
+		t.Fatal(x)
+	}
+
 	// Delete
 	c.Del("10")
 	c.Del("9")
