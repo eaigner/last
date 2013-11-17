@@ -7,23 +7,23 @@ import (
 )
 
 type Cache interface {
-	// SetMinFreeMemory sets the minimum amount of free ram
-	// before the cache starts evicting objects.
+	// SetMinFreeMemory sets the minimum amount of free memory
+	// in bytes before the cache starts evicting objects.
 	SetMinFreeMemory(v uint64)
 
-	// Put pushes the item to the front of the cache.
+	// Put stores pushes the item to the front of the cache.
 	Put(k string, v interface{})
 
-	// Get get the item from the cache and pushes it to the front.
+	// Get gets the item from the cache and pushes it to the front.
 	Get(k string) (interface{}, bool)
 
-	// Del removes the item from the cache
+	// Del removes the item from the cache.
 	Del(k string)
 
 	// Len returns the number of items stored in the cache.
 	Len() int
 
-	// Evict evicts the last n items from the cache.
+	// Evict removes the oldest n items from the cache.
 	Evict(n int)
 }
 
