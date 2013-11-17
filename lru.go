@@ -104,7 +104,7 @@ func (c *lru) evictIfNecessary() {
 		panic(err)
 	}
 	if memStats.Free < c.minFreeMem {
-		c.evict(c.list.Len() / 4)
+		c.evict(1000)
 		debug.FreeOSMemory()
 	}
 }
