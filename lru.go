@@ -2,14 +2,14 @@ package last
 
 import (
 	"container/list"
+	"runtime/debug"
 	"sync"
-	"sync/atomic"
 )
 
 type Cache interface {
 	// SetMinFreeMemory sets the minimum amount of free ram
 	// before the cache starts evicting objects.
-	SetMinFreeMemory(v int64)
+	SetMinFreeMemory(v uint64)
 
 	// Put pushes the item to the front of the cache.
 	Put(k string, v interface{})
@@ -25,22 +25,12 @@ type Cache interface {
 
 	// Evict evicts the last n items from the cache.
 	Evict(n int)
-
-	// Schedule adds the cache to the eviction scheduler that evicts it
-	// automatically when the system memory is below the minimum threshold.
-	//
-	// You must unschedule the cache when you no longer need it, or it's
-	// memory cannot be freed up by the GC.
-	Schedule()
-
-	// Unschedule removes the cache from the eviction scheduler.
-	Unschedule()
 }
 
 type lru struct {
 	mtx        sync.Mutex
 	scheduled  int32
-	minFreeMem int64
+	minFreeMem uint64
 	lookup     map[string]*list.Element
 	list       *list.List
 }
@@ -58,8 +48,10 @@ func New() Cache {
 	}
 }
 
-func (c *lru) SetMinFreeMemory(v int64) {
-	atomic.StoreInt64(&c.minFreeMem, v)
+func (c *lru) SetMinFreeMemory(v uint64) {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+	c.minFreeMem = v
 }
 
 func (c *lru) Put(k string, v interface{}) {
@@ -68,6 +60,7 @@ func (c *lru) Put(k string, v interface{}) {
 	if v == nil {
 		return
 	}
+	c.evictIfNecessary()
 	c.lookup[k] = c.list.PushFront(&lruItem{
 		key:   k,
 		value: v,
@@ -102,6 +95,21 @@ func (c *lru) Len() int {
 func (c *lru) Evict(n int) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
+	c.evict(n)
+}
+
+func (c *lru) evictIfNecessary() {
+	err := refreshMemStats()
+	if err != nil {
+		panic(err)
+	}
+	if memStats.Free < c.minFreeMem {
+		c.evict(c.list.Len() / 4)
+		debug.FreeOSMemory()
+	}
+}
+
+func (c *lru) evict(n int) {
 	for {
 		if n < 1 {
 			break
@@ -111,16 +119,4 @@ func (c *lru) Evict(n int) {
 		c.list.Remove(e)
 		n--
 	}
-}
-
-func (c *lru) Schedule() {
-	schedulerMtx.Lock()
-	defer schedulerMtx.Unlock()
-	caches[c] = 1
-}
-
-func (c *lru) Unschedule() {
-	schedulerMtx.Lock()
-	defer schedulerMtx.Unlock()
-	delete(caches, c)
 }
