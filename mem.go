@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type SysMemStats struct {
+type sysMemStats struct {
 	Total uint64
 	Used  uint64
 	Free  uint64
@@ -12,7 +12,7 @@ type SysMemStats struct {
 
 var (
 	lastRead time.Time
-	memStats SysMemStats
+	memStats sysMemStats
 )
 
 func refreshMemStats() error {
