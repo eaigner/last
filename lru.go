@@ -30,7 +30,6 @@ type Cache interface {
 
 type lru struct {
 	mtx        sync.Mutex
-	scheduled  int32
 	minFreeMem uint64
 	lookup     map[string]*list.Element
 	list       *list.List
