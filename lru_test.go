@@ -83,6 +83,29 @@ func TestCache(t *testing.T) {
 	}
 }
 
+func TestMaxItems(t *testing.T) {
+	c := New()
+	c.SetMaxItems(2)
+
+	c.Put("a", 1)
+
+	if x := c.Len(); x != 1 {
+		t.Fatal(x)
+	}
+
+	c.Put("b", 2)
+
+	if x := c.Len(); x != 2 {
+		t.Fatal(x)
+	}
+
+	c.Put("c", 3)
+
+	if x := c.Len(); x != 2 {
+		t.Fatal(x)
+	}
+}
+
 func TestMemory(t *testing.T) {
 	c := New()
 

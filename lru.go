@@ -8,6 +8,9 @@ import (
 )
 
 type Cache interface {
+	//  SetMaxItems sets the maximum number of items the cache can hold to n
+	SetMaxItems(n int)
+
 	// SetMinFreeMemory sets the minimum amount of free memory
 	// in bytes before the cache starts evicting objects.
 	SetMinFreeMemory(v uint64)
@@ -30,6 +33,7 @@ type Cache interface {
 
 type lru struct {
 	mtx        sync.Mutex
+	maxItems   int
 	minFreeMem uint64
 	lookup     map[string]*list.Element
 	list       *list.List
@@ -48,6 +52,12 @@ func New() Cache {
 	}
 }
 
+func (c *lru) SetMaxItems(n int) {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+	c.maxItems = n
+}
+
 func (c *lru) SetMinFreeMemory(v uint64) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
@@ -60,12 +70,12 @@ func (c *lru) Put(k string, v interface{}) {
 	if v == nil {
 		return
 	}
-	c.evictIfNecessary()
 	c.del(k)
 	c.lookup[k] = c.list.PushFront(&lruItem{
 		key:   k,
 		value: v,
 	})
+	c.evictIfNecessary()
 }
 
 func (c *lru) Get(k string) (interface{}, bool) {
@@ -119,6 +129,10 @@ func (c *lru) evictIfNecessary() {
 		// force a read reset, otherwise we might evict
 		// the whole cache with subsequent calls.
 		lastRead = time.Unix(0, 0)
+	}
+	max := c.maxItems
+	if n := c.list.Len(); max > 1 && n > max {
+		c.evict(n - max)
 	}
 }
 
