@@ -62,11 +62,11 @@ func (c *lru) SetMinFreeMemory(v uint) {
 }
 
 func (c *lru) Put(k string, v interface{}) {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
 	if v == nil {
 		return
 	}
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
 	c.del(k)
 	c.lookup[k] = c.list.PushFront(&lruItem{
 		key:   k,
