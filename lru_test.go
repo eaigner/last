@@ -106,6 +106,39 @@ func TestMaxItems(t *testing.T) {
 	}
 }
 
+func TestTimeout(t *testing.T) {
+	c := New()
+	c.SetTimeout(100)
+
+	for i := 0; i < 5; i++ {
+		k := strconv.Itoa(i)
+		c.Put(k, i)
+		time.Sleep(time.Millisecond * 10)
+	}
+
+	if x := c.Len(); x != 5 {
+		t.Fatal(x)
+	}
+
+	time.Sleep(time.Millisecond * 100)
+
+	// check timeout on get
+	v, ok := c.Get("0")
+	if ok || v != nil {
+		t.Fatal(ok, v)
+	}
+	if x := c.Len(); x != 4 {
+		t.Fatal(x)
+	}
+
+	// force evict
+	c.(*lru).evictIfNecessary()
+
+	if x := c.Len(); x != 0 {
+		t.Fatal(x)
+	}
+}
+
 func TestMemory(t *testing.T) {
 	c := New()
 
@@ -133,7 +166,7 @@ func TestMemory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c.(*lru).minFreeMem = (stats.Free - 1024*1024*10)
+	c.SetMinFreeMemory(stats.Free - 1024*1024*10)
 
 	for {
 		i++
