@@ -4,16 +4,17 @@ import (
 	"container/list"
 	"runtime/debug"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
 type Cache interface {
 	//  SetMaxItems sets the maximum number of items the cache can hold to n
-	SetMaxItems(n int)
+	SetMaxItems(n uint)
 
 	// SetMinFreeMemory sets the minimum amount of free memory
 	// in bytes before the cache starts evicting objects.
-	SetMinFreeMemory(v uint64)
+	SetMinFreeMemory(v uint)
 
 	// Put stores and pushes the item to the front of the cache.
 	Put(k string, v interface{})
@@ -28,12 +29,12 @@ type Cache interface {
 	Len() int
 
 	// Evict removes the oldest n items from the cache.
-	Evict(n int)
+	Evict(n uint)
 }
 
 type lru struct {
 	mtx        sync.Mutex
-	maxItems   int
+	maxItems   uint64
 	minFreeMem uint64
 	lookup     map[string]*list.Element
 	list       *list.List
@@ -52,16 +53,12 @@ func New() Cache {
 	}
 }
 
-func (c *lru) SetMaxItems(n int) {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
-	c.maxItems = n
+func (c *lru) SetMaxItems(n uint) {
+	atomic.StoreUint64(&c.maxItems, uint64(n))
 }
 
-func (c *lru) SetMinFreeMemory(v uint64) {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
-	c.minFreeMem = v
+func (c *lru) SetMinFreeMemory(v uint) {
+	atomic.StoreUint64(&c.minFreeMem, uint64(v))
 }
 
 func (c *lru) Put(k string, v interface{}) {
@@ -107,10 +104,10 @@ func (c *lru) Len() int {
 	return c.list.Len()
 }
 
-func (c *lru) Evict(n int) {
+func (c *lru) Evict(n uint) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
-	c.evict(n)
+	c.evict(uint64(n))
 }
 
 func (c *lru) evictIfNecessary() {
@@ -118,8 +115,9 @@ func (c *lru) evictIfNecessary() {
 	if err != nil {
 		panic(err)
 	}
-	if memStats.Free < c.minFreeMem {
-		c.evict(c.list.Len() / 4)
+	min := uint64(atomic.LoadUint64(&c.minFreeMem))
+	if memStats.Free < min {
+		c.evict(uint64(c.list.Len() / 4))
 		debug.FreeOSMemory()
 
 		if evictFunc != nil {
@@ -130,15 +128,16 @@ func (c *lru) evictIfNecessary() {
 		// the whole cache with subsequent calls.
 		lastRead = time.Unix(0, 0)
 	}
-	max := c.maxItems
-	if n := c.list.Len(); max > 1 && n > max {
+	n := uint64(c.list.Len())
+	max := atomic.LoadUint64(&c.maxItems)
+	if max > 1 && n > max {
 		c.evict(n - max)
 	}
 }
 
 var evictFunc func() = nil
 
-func (c *lru) evict(n int) {
+func (c *lru) evict(n uint64) {
 	for {
 		if n < 1 {
 			break
