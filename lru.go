@@ -75,16 +75,26 @@ func (c *lru) Put(k string, v interface{}) {
 	}
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
-	c.del(k)
-	i := &lruItem{
-		key:   k,
-		value: v,
+
+	timeout := atomic.LoadUint64(&c.timeout)
+
+	e, ok := c.lookup[k]
+	if ok {
+		i := e.Value.(*lruItem)
+		if timeout > 0 {
+			i.timeout = nowMs() + timeout
+		}
+		c.list.MoveToFront(e)
+	} else {
+		i := &lruItem{
+			key:   k,
+			value: v,
+		}
+		if timeout > 0 {
+			i.timeout = nowMs() + timeout
+		}
+		c.lookup[k] = c.list.PushFront(i)
 	}
-	if timeout := atomic.LoadUint64(&c.timeout); timeout > 0 {
-		i.timeout = nowMs() + timeout
-	}
-	e := c.list.PushFront(i)
-	c.lookup[k] = e
 	c.evictIfNecessary()
 }
 
