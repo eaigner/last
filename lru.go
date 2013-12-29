@@ -102,7 +102,7 @@ func (c *lru) Get(k string) (interface{}, bool) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 	if e, ok := c.lookup[k]; ok {
-		timeout := atomic.LoadUint64(&c.timeout)
+		timeout := e.Value.(*lruItem).timeout
 		if timeout > 0 && nowMs() > timeout {
 			c.list.Remove(e)
 			delete(c.lookup, k)
