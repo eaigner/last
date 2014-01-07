@@ -83,6 +83,20 @@ func TestCache(t *testing.T) {
 	}
 }
 
+func TestPutReplace(t *testing.T) {
+	c := New()
+	c.Put(`a`, 1)
+	c.Put(`a`, 2)
+
+	v, ok := c.Get(`a`)
+	if !ok {
+		t.Fatal()
+	}
+	if x := v.(int); x != 2 {
+		t.Fatal(x)
+	}
+}
+
 func TestMaxItems(t *testing.T) {
 	c := New()
 	c.SetMaxItems(2)

@@ -84,6 +84,7 @@ func (c *lru) Put(k string, v interface{}) {
 		if timeout > 0 {
 			i.timeout = nowMs() + timeout
 		}
+		i.value = v
 		c.list.MoveToFront(e)
 	} else {
 		i := &lruItem{
