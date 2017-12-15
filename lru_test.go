@@ -83,6 +83,43 @@ func TestCache(t *testing.T) {
 	}
 }
 
+func TestGetOrPut(t *testing.T) {
+	c := New()
+	v, loaded := c.GetOrPut(`a`, 1)
+	if loaded {
+		t.Fatal()
+	}
+	if x := v.(int); x != 1 {
+		t.Fatal(x)
+	}
+
+	c.Put(`b`, 2)
+	v, loaded = c.GetOrPut(`b`, nil)
+	if !loaded {
+		t.Fatal()
+	}
+	if x := v.(int); x != 2 {
+		t.Fatal(x)
+	}
+
+	c.Put(`c`, 3)
+	v, loaded = c.GetOrPut(`c`, 4)
+	if !loaded {
+		t.Fatal()
+	}
+	if x := v.(int); x != 3 {
+		t.Fatal(x)
+	}
+
+	v, loaded = c.GetOrPut(`d`, nil)
+	if loaded {
+		t.Fatal()
+	}
+	if v != nil {
+		t.Fatal()
+	}
+}
+
 func TestPutReplace(t *testing.T) {
 	c := New()
 	c.Put(`a`, 1)

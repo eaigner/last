@@ -25,6 +25,11 @@ type Cache interface {
 	// Get gets the item from the cache and pushes it to the front.
 	Get(k string) (interface{}, bool)
 
+	// GetOrPut returns the existing value for the key if present.
+	// Otherwise, it stores and returns the given value. The bool
+	// result is true if the value was loaded, false if stored.
+	GetOrPut(k string, v interface{}) (interface{}, bool)
+
 	// Del removes the item from the cache.
 	Del(k string)
 
@@ -75,7 +80,10 @@ func (c *lru) Put(k string, v interface{}) {
 	}
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
+	c.put(k, v)
+}
 
+func (c *lru) put(k string, v interface{}) {
 	timeout := atomic.LoadUint64(&c.timeout)
 
 	e, ok := c.lookup[k]
@@ -102,6 +110,10 @@ func (c *lru) Put(k string, v interface{}) {
 func (c *lru) Get(k string) (interface{}, bool) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
+	return c.get(k)
+}
+
+func (c *lru) get(k string) (interface{}, bool) {
 	if e, ok := c.lookup[k]; ok {
 		timeout := e.Value.(*lruItem).timeout
 		if timeout > 0 && nowMs() > timeout {
@@ -113,6 +125,19 @@ func (c *lru) Get(k string) (interface{}, bool) {
 		}
 	}
 	return nil, false
+}
+
+func (c *lru) GetOrPut(k string, v interface{}) (interface{}, bool) {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+	if e, ok := c.get(k); ok {
+		return e, ok
+	}
+	if v == nil {
+		return nil, false
+	}
+	c.put(k, v)
+	return v, false
 }
 
 func (c *lru) Del(k string) {
