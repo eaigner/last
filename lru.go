@@ -110,6 +110,10 @@ func (c *lru) put(k string, v interface{}) {
 func (c *lru) Get(k string) (interface{}, bool) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
+	return c.get(k)
+}
+
+func (c *lru) get(k string) (interface{}, bool) {
 	if e, ok := c.lookup[k]; ok {
 		timeout := e.Value.(*lruItem).timeout
 		if timeout > 0 && nowMs() > timeout {
@@ -126,15 +130,8 @@ func (c *lru) Get(k string) (interface{}, bool) {
 func (c *lru) GetOrPut(k string, v interface{}) (interface{}, bool) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
-	if e, ok := c.lookup[k]; ok {
-		timeout := e.Value.(*lruItem).timeout
-		if timeout > 0 && nowMs() > timeout {
-			c.list.Remove(e)
-			delete(c.lookup, k)
-		} else {
-			c.list.MoveToFront(e)
-			return e.Value.(*lruItem).value, true
-		}
+	if e, ok := c.get(k); ok {
+		return e, ok
 	}
 	if v == nil {
 		return nil, false
